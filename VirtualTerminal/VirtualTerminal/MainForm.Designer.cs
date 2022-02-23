@@ -83,7 +83,7 @@
             this.richTextBoxTerminal.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
             this.richTextBoxTerminal.Size = new System.Drawing.Size(484, 211);
             this.richTextBoxTerminal.TabIndex = 13;
-            this.richTextBoxTerminal.Text = "> Note: Enter vt -quit to go back to main screen.";
+            this.richTextBoxTerminal.Text = "> Note: Enter vt -quit to go back to main screen.\n> ";
             // 
             // buttonStartRxProcess
             // 
