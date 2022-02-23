@@ -163,8 +163,8 @@
             this.comboBoxParity.FormattingEnabled = true;
             this.comboBoxParity.Items.AddRange(new object[] {
             "NONE",
-            "EVEN",
             "ODD",
+            "EVEN",
             "MARK",
             "SPACE"});
             this.comboBoxParity.Location = new System.Drawing.Point(125, 99);
