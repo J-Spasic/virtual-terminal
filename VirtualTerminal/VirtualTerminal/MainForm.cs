@@ -115,7 +115,7 @@ namespace VirtualTerminal
         {
             comboBoxBaudRate.SelectedIndex = 3; // 1200
             comboBoxDataBits.SelectedIndex = 1; // 8
-            comboBoxParity.SelectedIndex = 1;   // EVEN
+            comboBoxParity.SelectedIndex = 2;   // EVEN
             comboBoxStopBits.SelectedIndex = 1; // 2
         }
 
