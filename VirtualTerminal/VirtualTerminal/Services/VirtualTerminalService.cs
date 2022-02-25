@@ -30,6 +30,16 @@ namespace VirtualTerminal.Services
             VirtualTerminalService.serialPort.DataBits = dataBits;
             VirtualTerminalService.serialPort.StopBits = (StopBits)stopBit;
         }
+
+        public static void OpenSerialPort()
+        {
+            VirtualTerminalService.serialPort.Open();
+        }
+
+        public static void CloseSerialPort()
+        {
+            VirtualTerminalService.serialPort.Close();
+        }
         #endregion Method(s)
     }
 }
