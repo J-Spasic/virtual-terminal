@@ -84,6 +84,7 @@
             this.richTextBoxTerminal.Size = new System.Drawing.Size(484, 211);
             this.richTextBoxTerminal.TabIndex = 13;
             this.richTextBoxTerminal.Text = "> Note: Enter vt -quit to go back to main screen.\n> ";
+            this.richTextBoxTerminal.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TerminalRichTextBox_KeyDown);
             // 
             // buttonStartRxProcess
             // 
@@ -102,6 +103,7 @@
             this.buttonStartTxProcess.TabIndex = 11;
             this.buttonStartTxProcess.Text = "Start Tx Process";
             this.buttonStartTxProcess.UseVisualStyleBackColor = true;
+            this.buttonStartTxProcess.Click += new System.EventHandler(this.StartTxProcessButton_Click);
             // 
             // groupBoxBuffer
             // 

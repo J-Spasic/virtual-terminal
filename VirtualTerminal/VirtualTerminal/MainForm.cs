@@ -7,6 +7,10 @@ namespace VirtualTerminal
 {
     public partial class MainForm : Form
     {
+        #region Field(s)
+        private int numberOfEnteredSymbolsInTerminal;
+        #endregion Field(s)
+
         #region Constructor(s)
         public MainForm()
         {
@@ -19,6 +23,54 @@ namespace VirtualTerminal
         {
             SetPortComboBox();
             SetInitialStateOfControls();
+        }
+
+        private void StartTxProcessButton_Click(object sender, EventArgs e)
+        {
+            string? portName = comboBoxPort.Items[comboBoxPort.SelectedIndex]?.ToString();
+            int baudRate = Convert.ToInt32(comboBoxBaudRate.Items[comboBoxBaudRate.SelectedIndex].ToString());
+            int dataBits = Convert.ToInt32(comboBoxDataBits.Items[comboBoxDataBits.SelectedIndex].ToString());
+            int parityIndex = comboBoxParity.SelectedIndex;
+            int stopBit = Convert.ToInt32(comboBoxStopBits.Items[comboBoxStopBits.SelectedIndex].ToString());
+
+            VirtualTerminalService.ConfigureSerialPort((portName is not null) ? portName : string.Empty,
+                baudRate, parityIndex, dataBits, stopBit);
+
+            try
+            {
+                VirtualTerminalService.OpenSerialPort();
+
+                numberOfEnteredSymbolsInTerminal = 0;
+
+                richTextBoxTerminal.Visible = true;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                MessageBox.Show("You do not have access to this port. Please try another one.",
+                    "Unauthorized access", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                // To-Do: Replace with Logger.
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        private void TerminalRichTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Back)
+            {
+                if (numberOfEnteredSymbolsInTerminal == 0)
+                {
+                    e.Handled = true;
+                }
+                else
+                {
+                    numberOfEnteredSymbolsInTerminal--;
+                }
+            }
+            else
+            {
+                numberOfEnteredSymbolsInTerminal++;
+            }
         }
         #endregion Event(s)
 
