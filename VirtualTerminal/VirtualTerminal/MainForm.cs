@@ -45,6 +45,7 @@ namespace VirtualTerminal
 
                 richTextBoxTerminal.Visible = true;
                 richTextBoxTerminal.Focus();
+                richTextBoxTerminal.Select(richTextBoxTerminal.Text.Length, 0);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -76,6 +77,12 @@ namespace VirtualTerminal
                 if (MainForm.IsArrowKeyPressed(e.KeyCode))
                 {
                     e.Handled = true;
+                }
+                else if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+
+                    HandleEnteredCommand();
                 }
             }
         }
@@ -156,6 +163,29 @@ namespace VirtualTerminal
         {
             return keyCode == Keys.Up || keyCode == Keys.Down || keyCode == Keys.Left ||
                 keyCode == Keys.Right;
+        }
+
+        private void HandleEnteredCommand()
+        {
+            int commandLength = richTextBoxTerminal.Text.Length - numberOfEnteredSymbolsInTerminal;
+            string command = richTextBoxTerminal.Text[commandLength..];
+
+            if (command.ToLower().Equals("vt -quit"))
+            {
+                VirtualTerminalService.CloseSerialPort();
+
+                richTextBoxTerminal.Text = "> ";
+                richTextBoxTerminal.Visible = false;
+
+                comboBoxPort.Focus();
+            }
+            else
+            {
+                richTextBoxTerminal.Text += "\n> ";
+                richTextBoxTerminal.Select(richTextBoxTerminal.Text.Length, 0);
+            }
+
+            numberOfEnteredSymbolsInTerminal = 0;
         }
         #endregion Method(s)
     }
