@@ -9,6 +9,7 @@ namespace VirtualTerminal
     {
         #region Field(s)
         private int numberOfEnteredSymbolsInTerminal;
+        private bool isBackspacePressed;
         #endregion Field(s)
 
         #region Constructor(s)
@@ -58,9 +59,24 @@ namespace VirtualTerminal
         {
             if (e.KeyCode == Keys.Back)
             {
+                isBackspacePressed = true;
+
                 TryToDeleteEnteredSymbol(e);
             }
             else
+            {
+                isBackspacePressed = false;
+
+                if (MainForm.IsArrowKeyPressed(e.KeyCode))
+                {
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void TerminalRichTextBox_TextChanged(object sender, EventArgs e)
+        {
+            if (!richTextBoxTerminal.Text.Equals(string.Empty) && !isBackspacePressed)
             {
                 numberOfEnteredSymbolsInTerminal++;
             }
@@ -128,6 +144,12 @@ namespace VirtualTerminal
             {
                 numberOfEnteredSymbolsInTerminal--;
             }
+        }
+
+        private static bool IsArrowKeyPressed(Keys keyCode)
+        {
+            return keyCode == Keys.Up || keyCode == Keys.Down || keyCode == Keys.Left ||
+                keyCode == Keys.Right;
         }
         #endregion Method(s)
     }

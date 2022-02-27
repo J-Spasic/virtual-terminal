@@ -84,6 +84,7 @@
             this.richTextBoxTerminal.Size = new System.Drawing.Size(484, 211);
             this.richTextBoxTerminal.TabIndex = 13;
             this.richTextBoxTerminal.Text = "> Note: Enter vt -quit to go back to main screen.\n> ";
+            this.richTextBoxTerminal.TextChanged += new System.EventHandler(this.TerminalRichTextBox_TextChanged);
             this.richTextBoxTerminal.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TerminalRichTextBox_KeyDown);
             // 
             // buttonStartRxProcess
