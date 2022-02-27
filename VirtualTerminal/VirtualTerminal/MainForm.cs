@@ -44,6 +44,7 @@ namespace VirtualTerminal
                 numberOfEnteredSymbolsInTerminal = 0;
 
                 richTextBoxTerminal.Visible = true;
+                richTextBoxTerminal.Focus();
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -53,6 +54,11 @@ namespace VirtualTerminal
                 // To-Do: Replace with Logger.
                 Console.WriteLine(ex.Message);
             }
+        }
+
+        private void TerminalRichTextBox_Click(object sender, EventArgs e)
+        {
+            richTextBoxTerminal.Select(richTextBoxTerminal.Text.Length, 0);
         }
 
         private void TerminalRichTextBox_KeyDown(object sender, KeyEventArgs e)
