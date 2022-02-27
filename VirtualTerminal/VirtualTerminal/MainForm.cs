@@ -58,14 +58,7 @@ namespace VirtualTerminal
         {
             if (e.KeyCode == Keys.Back)
             {
-                if (numberOfEnteredSymbolsInTerminal == 0)
-                {
-                    e.Handled = true;
-                }
-                else
-                {
-                    numberOfEnteredSymbolsInTerminal--;
-                }
+                TryToDeleteEnteredSymbol(e);
             }
             else
             {
@@ -123,6 +116,18 @@ namespace VirtualTerminal
         {
             buttonStartTxProcess.Enabled = enableButton;
             buttonStartRxProcess.Enabled = enableButton;
+        }
+
+        private void TryToDeleteEnteredSymbol(KeyEventArgs e)
+        {
+            if (numberOfEnteredSymbolsInTerminal == 0)
+            {
+                e.Handled = true;
+            }
+            else
+            {
+                numberOfEnteredSymbolsInTerminal--;
+            }
         }
         #endregion Method(s)
     }
