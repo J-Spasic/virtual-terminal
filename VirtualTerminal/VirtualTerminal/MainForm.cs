@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Windows.Forms;
 
 using VirtualTerminal.Services;
@@ -181,6 +182,18 @@ namespace VirtualTerminal
             }
             else
             {
+                if (radioButtonTextMode.Checked)
+                {
+                    VirtualTerminalService.SendData(command[0]);
+                }
+                else
+                {
+                    if (byte.TryParse(command, NumberStyles.HexNumber, null, out byte hexValue))
+                    {
+                        VirtualTerminalService.SendData(hexValue);
+                    }
+                }
+
                 richTextBoxTerminal.Text += "\n> ";
                 richTextBoxTerminal.Select(richTextBoxTerminal.Text.Length, 0);
             }

@@ -40,6 +40,16 @@ namespace VirtualTerminal.Services
         {
             VirtualTerminalService.serialPort.Close();
         }
+
+        public static void SendData(char character)
+        {
+            VirtualTerminalService.serialPort.Write(new char[] { character }, 0, 1);
+        }
+
+        public static void SendData(byte hexValue)
+        {
+            VirtualTerminalService.serialPort.Write(new byte[] { hexValue }, 0, 1);
+        }
         #endregion Method(s)
     }
 }
