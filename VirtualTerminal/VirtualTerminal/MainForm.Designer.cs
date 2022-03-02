@@ -139,6 +139,7 @@
             this.radioButtonTextMode.TabStop = true;
             this.radioButtonTextMode.Text = "Text Mode";
             this.radioButtonTextMode.UseVisualStyleBackColor = true;
+            this.radioButtonTextMode.CheckedChanged += new System.EventHandler(this.TextModeRadioButton_CheckedChanged);
             // 
             // comboBoxStopBits
             // 
@@ -151,6 +152,7 @@
             this.comboBoxStopBits.Name = "comboBoxStopBits";
             this.comboBoxStopBits.Size = new System.Drawing.Size(121, 23);
             this.comboBoxStopBits.TabIndex = 9;
+            this.comboBoxStopBits.SelectedIndexChanged += new System.EventHandler(this.StopBitsComboBox_SelectedIndexChanged);
             // 
             // labelStopBits
             // 
@@ -175,6 +177,7 @@
             this.comboBoxParity.Name = "comboBoxParity";
             this.comboBoxParity.Size = new System.Drawing.Size(121, 23);
             this.comboBoxParity.TabIndex = 7;
+            this.comboBoxParity.SelectedIndexChanged += new System.EventHandler(this.ParityComboBox_SelectedIndexChanged);
             // 
             // labelParity
             // 
@@ -196,6 +199,7 @@
             this.comboBoxDataBits.Name = "comboBoxDataBits";
             this.comboBoxDataBits.Size = new System.Drawing.Size(121, 23);
             this.comboBoxDataBits.TabIndex = 5;
+            this.comboBoxDataBits.SelectedIndexChanged += new System.EventHandler(this.DataBitsComboBox_SelectedIndexChanged);
             // 
             // labelDataBits
             // 
@@ -224,6 +228,7 @@
             this.comboBoxBaudRate.Name = "comboBoxBaudRate";
             this.comboBoxBaudRate.Size = new System.Drawing.Size(121, 23);
             this.comboBoxBaudRate.TabIndex = 3;
+            this.comboBoxBaudRate.SelectedIndexChanged += new System.EventHandler(this.BaudRateComboBox_SelectedIndexChanged);
             // 
             // labelBaudRate
             // 
@@ -242,6 +247,7 @@
             this.comboBoxPort.Name = "comboBoxPort";
             this.comboBoxPort.Size = new System.Drawing.Size(121, 23);
             this.comboBoxPort.TabIndex = 1;
+            this.comboBoxPort.SelectedIndexChanged += new System.EventHandler(this.PortComboBox_SelectedIndexChanged);
             // 
             // labelPort
             // 

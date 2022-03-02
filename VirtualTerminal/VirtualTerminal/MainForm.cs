@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Windows.Forms;
 
+using VirtualTerminal.Models;
 using VirtualTerminal.Services;
 
 namespace VirtualTerminal
@@ -9,7 +10,6 @@ namespace VirtualTerminal
     public partial class MainForm : Form
     {
         #region Field(s)
-        private int numberOfEnteredSymbolsInTerminal;
         private bool isBackspacePressed;
         #endregion Field(s)
 
@@ -27,26 +27,56 @@ namespace VirtualTerminal
             SetInitialStateOfControls();
         }
 
-        private void StartTxProcessButton_Click(object sender, EventArgs e)
+        private void PortComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             string? portName = comboBoxPort.Items[comboBoxPort.SelectedIndex]?.ToString();
+
+            VirtualTerminalService.SetPortName((portName is not null) ? portName : string.Empty);
+        }
+
+        private void BaudRateComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
             int baudRate = Convert.ToInt32(comboBoxBaudRate.Items[comboBoxBaudRate.SelectedIndex].ToString());
+
+            VirtualTerminalService.SetBaudRate(baudRate);
+        }
+
+        private void DataBitsComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
             int dataBits = Convert.ToInt32(comboBoxDataBits.Items[comboBoxDataBits.SelectedIndex].ToString());
+
+            VirtualTerminalService.SetDataBits(dataBits);
+        }
+
+        private void ParityComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
             int parityIndex = comboBoxParity.SelectedIndex;
-            int stopBit = Convert.ToInt32(comboBoxStopBits.Items[comboBoxStopBits.SelectedIndex].ToString());
 
-            VirtualTerminalService.ConfigureSerialPort((portName is not null) ? portName : string.Empty,
-                baudRate, parityIndex, dataBits, stopBit);
+            VirtualTerminalService.SetParity(parityIndex);
+        }
 
+        private void StopBitsComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int stopBits = Convert.ToInt32(comboBoxStopBits.Items[comboBoxStopBits.SelectedIndex].ToString());
+
+            VirtualTerminalService.SetStopBits(stopBits);
+        }
+
+        private void TextModeRadioButton_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radioButtonTextMode.Checked) { VirtualTerminalStats.CurrentMode = VirtualTerminalMode.Text; }
+            else { VirtualTerminalStats.CurrentMode = VirtualTerminalMode.Hex; }
+        }
+
+        private void StartTxProcessButton_Click(object sender, EventArgs e)
+        {
             try
             {
                 VirtualTerminalService.OpenSerialPort();
 
-                numberOfEnteredSymbolsInTerminal = 0;
+                VirtualTerminalStats.IsActive = true;
 
-                richTextBoxTerminal.Visible = true;
-                richTextBoxTerminal.Focus();
-                richTextBoxTerminal.Select(richTextBoxTerminal.Text.Length, 0);
+                ActivateTerminal();
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -60,39 +90,43 @@ namespace VirtualTerminal
 
         private void TerminalRichTextBox_Click(object sender, EventArgs e)
         {
-            richTextBoxTerminal.Select(richTextBoxTerminal.Text.Length, 0);
+            richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
         }
 
         private void TerminalRichTextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Back)
+            if (MainForm.IsArrowKeyPressed(e.KeyCode)) { e.Handled = true; }
+            else if (VirtualTerminalStats.NoEnteredSymbols == 0)
             {
-                isBackspacePressed = true;
-
-                TryToDeleteEnteredSymbol(e);
+                if (e.KeyCode == Keys.Back) { e.Handled = true; }
             }
             else
             {
-                isBackspacePressed = false;
-
-                if (MainForm.IsArrowKeyPressed(e.KeyCode))
+                if (e.KeyCode == Keys.Back)
                 {
-                    e.Handled = true;
+                    isBackspacePressed = true;
+
+                    VirtualTerminalStats.NoEnteredSymbols--;
                 }
-                else if (e.KeyCode == Keys.Enter)
+                else
                 {
-                    e.Handled = true;
+                    isBackspacePressed = false;
 
-                    HandleEnteredCommand();
+                    if (e.KeyCode == Keys.Enter)
+                    {
+                        e.Handled = true;
+
+                        HandleEnteredCommand();
+                    }
                 }
             }
         }
 
         private void TerminalRichTextBox_TextChanged(object sender, EventArgs e)
         {
-            if (!richTextBoxTerminal.Text.Equals(string.Empty) && !isBackspacePressed)
+            if (richTextBoxTerminal.TextLength != 0 && !isBackspacePressed)
             {
-                numberOfEnteredSymbolsInTerminal++;
+                VirtualTerminalStats.NoEnteredSymbols++;
             }
         }
         #endregion Event(s)
@@ -109,10 +143,7 @@ namespace VirtualTerminal
             }
             else
             {
-                foreach (string portName in serialPortNames)
-                {
-                    comboBoxPort.Items.Add(portName);
-                }
+                foreach (string portName in serialPortNames) { comboBoxPort.Items.Add(portName); }
 
                 comboBoxPort.SelectedIndex = 0;
             }
@@ -122,14 +153,8 @@ namespace VirtualTerminal
         {
             SetComboBoxesDefaultValues();
 
-            if (comboBoxPort.Items.Count > 0)
-            {
-                SetButtonsEnabledProperty(true);
-            }
-            else
-            {
-                SetButtonsEnabledProperty(false);
-            }
+            if (comboBoxPort.Items.Count > 0) { SetButtonsEnabledProperty(true); }
+            else { SetButtonsEnabledProperty(false); }
 
             richTextBoxTerminal.Visible = false;
         }
@@ -144,61 +169,63 @@ namespace VirtualTerminal
 
         private void SetButtonsEnabledProperty(bool enableButton)
         {
-            buttonStartTxProcess.Enabled = enableButton;
-            buttonStartRxProcess.Enabled = enableButton;
+            buttonStartTxProcess.Enabled = buttonStartRxProcess.Enabled = enableButton;
         }
 
-        private void TryToDeleteEnteredSymbol(KeyEventArgs e)
+        private void ActivateTerminal()
         {
-            if (numberOfEnteredSymbolsInTerminal == 0)
-            {
-                e.Handled = true;
-            }
-            else
-            {
-                numberOfEnteredSymbolsInTerminal--;
-            }
+            richTextBoxTerminal.Visible = true;
+
+            richTextBoxTerminal.Focus();
+            richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
         }
 
         private static bool IsArrowKeyPressed(Keys keyCode)
         {
-            return keyCode == Keys.Up || keyCode == Keys.Down || keyCode == Keys.Left ||
-                keyCode == Keys.Right;
+            return keyCode == Keys.Up || keyCode == Keys.Down ||
+                keyCode == Keys.Left || keyCode == Keys.Right;
         }
 
         private void HandleEnteredCommand()
         {
-            int commandLength = richTextBoxTerminal.Text.Length - numberOfEnteredSymbolsInTerminal;
-            string command = richTextBoxTerminal.Text[commandLength..];
+            int commandIndex = richTextBoxTerminal.TextLength - VirtualTerminalStats.NoEnteredSymbols;
+            string command = richTextBoxTerminal.Text[commandIndex..];
 
-            if (command.ToLower().Equals("vt -quit"))
+            if (command.ToLower().Equals(VirtualTerminalCommands.Quit))
             {
                 VirtualTerminalService.CloseSerialPort();
 
-                richTextBoxTerminal.Text = "> ";
-                richTextBoxTerminal.Visible = false;
+                VirtualTerminalStats.IsActive = false;
 
-                comboBoxPort.Focus();
+                ResetAndExitTerminal();
             }
             else
             {
-                if (radioButtonTextMode.Checked)
+                if (VirtualTerminalStats.CurrentMode == VirtualTerminalMode.Text)
                 {
-                    VirtualTerminalService.SendData(command[0]);
+                    VirtualTerminalService.SendData(new char[] { command[0] });
                 }
                 else
                 {
                     if (byte.TryParse(command, NumberStyles.HexNumber, null, out byte hexValue))
                     {
-                        VirtualTerminalService.SendData(hexValue);
+                        VirtualTerminalService.SendData(new byte[] { hexValue });
                     }
                 }
 
                 richTextBoxTerminal.Text += "\n> ";
-                richTextBoxTerminal.Select(richTextBoxTerminal.Text.Length, 0);
+                richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
             }
 
-            numberOfEnteredSymbolsInTerminal = 0;
+            VirtualTerminalStats.NoEnteredSymbols = 0;
+        }
+
+        private void ResetAndExitTerminal()
+        {
+            richTextBoxTerminal.Text = "> ";
+            richTextBoxTerminal.Visible = false;
+
+            comboBoxPort.Focus();
         }
         #endregion Method(s)
     }
