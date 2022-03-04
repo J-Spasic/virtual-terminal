@@ -197,7 +197,11 @@ namespace VirtualTerminal
 
                 VirtualTerminalStats.IsActive = false;
 
-                ResetAndExitTerminal();
+                ResetAndExitTerminalWindow();
+            }
+            else if (command.ToLower().Equals(VirtualTerminalCommands.Clear))
+            {
+                ClearTerminalWindow();
             }
             else
             {
@@ -220,12 +224,18 @@ namespace VirtualTerminal
             VirtualTerminalStats.NoEnteredSymbols = 0;
         }
 
-        private void ResetAndExitTerminal()
+        private void ResetAndExitTerminalWindow()
         {
             richTextBoxTerminal.Text = "> ";
             richTextBoxTerminal.Visible = false;
 
             comboBoxPort.Focus();
+        }
+
+        private void ClearTerminalWindow()
+        {
+            richTextBoxTerminal.Text = "> ";
+            richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
         }
         #endregion Method(s)
     }
