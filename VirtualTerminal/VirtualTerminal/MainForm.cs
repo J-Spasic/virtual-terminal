@@ -219,7 +219,8 @@ namespace VirtualTerminal
             {
                 MainForm.TransmitData(command);
 
-                richTextBoxTerminal.Text += "\n" + "> ";
+                if (richTextBoxTerminal.TextLength >= short.MaxValue) { richTextBoxTerminal.Text = "> "; }
+                else { richTextBoxTerminal.Text += "\n" + "> "; }
 
                 richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
             }
