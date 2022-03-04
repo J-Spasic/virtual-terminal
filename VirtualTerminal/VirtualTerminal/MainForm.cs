@@ -1,22 +1,32 @@
 using System;
 using System.Globalization;
+using System.IO.Ports;
 using System.Windows.Forms;
 
+using VirtualTerminal.Enums;
 using VirtualTerminal.Models;
-using VirtualTerminal.Services;
 
 namespace VirtualTerminal
 {
     public partial class MainForm : Form
     {
         #region Field(s)
-        private bool isBackspacePressed;
+        private static readonly SerialPort serialPort;
+
+        private static bool isBackspacePressed;
         #endregion Field(s)
 
         #region Constructor(s)
         public MainForm()
         {
             InitializeComponent();
+        }
+
+        static MainForm()
+        {
+            MainForm.serialPort = new SerialPort();
+
+            MainForm.isBackspacePressed = false;
         }
         #endregion Constructor(s)
 
@@ -31,52 +41,52 @@ namespace VirtualTerminal
         {
             string? portName = comboBoxPort.Items[comboBoxPort.SelectedIndex]?.ToString();
 
-            VirtualTerminalService.SetPortName((portName is not null) ? portName : string.Empty);
+            MainForm.serialPort.PortName = portName ?? string.Empty;
         }
 
         private void BaudRateComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             int baudRate = Convert.ToInt32(comboBoxBaudRate.Items[comboBoxBaudRate.SelectedIndex].ToString());
 
-            VirtualTerminalService.SetBaudRate(baudRate);
+            MainForm.serialPort.BaudRate = baudRate;
         }
 
         private void DataBitsComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             int dataBits = Convert.ToInt32(comboBoxDataBits.Items[comboBoxDataBits.SelectedIndex].ToString());
 
-            VirtualTerminalService.SetDataBits(dataBits);
+            MainForm.serialPort.DataBits = dataBits;
         }
 
         private void ParityComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             int parityIndex = comboBoxParity.SelectedIndex;
 
-            VirtualTerminalService.SetParity(parityIndex);
+            MainForm.serialPort.Parity = (Parity)parityIndex;
         }
 
         private void StopBitsComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             int stopBits = Convert.ToInt32(comboBoxStopBits.Items[comboBoxStopBits.SelectedIndex].ToString());
 
-            VirtualTerminalService.SetStopBits(stopBits);
+            MainForm.serialPort.StopBits = (StopBits)stopBits;
         }
 
         private void TextModeRadioButton_CheckedChanged(object sender, EventArgs e)
         {
-            if (radioButtonTextMode.Checked) { VirtualTerminalStats.CurrentMode = VirtualTerminalMode.Text; }
-            else { VirtualTerminalStats.CurrentMode = VirtualTerminalMode.Hex; }
+            VirtualTerminalStats.BufferMode = (radioButtonTextMode.Checked) ?
+                VirtualTerminalBufferMode.Text : VirtualTerminalBufferMode.Hex;
         }
 
         private void StartTxProcessButton_Click(object sender, EventArgs e)
         {
             try
             {
-                VirtualTerminalService.OpenSerialPort();
+                MainForm.serialPort.Open();
 
                 VirtualTerminalStats.IsActive = true;
 
-                ActivateTerminal();
+                ActivateTerminalWindow();
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -102,29 +112,13 @@ namespace VirtualTerminal
             }
             else
             {
-                if (e.KeyCode == Keys.Back)
-                {
-                    isBackspacePressed = true;
-
-                    VirtualTerminalStats.NoEnteredSymbols--;
-                }
-                else
-                {
-                    isBackspacePressed = false;
-
-                    if (e.KeyCode == Keys.Enter)
-                    {
-                        e.Handled = true;
-
-                        HandleEnteredCommand();
-                    }
-                }
+                HandlePressedKeyInTerminalWindow(e);
             }
         }
 
         private void TerminalRichTextBox_TextChanged(object sender, EventArgs e)
         {
-            if (richTextBoxTerminal.TextLength != 0 && !isBackspacePressed)
+            if (richTextBoxTerminal.TextLength != 0 && !MainForm.isBackspacePressed)
             {
                 VirtualTerminalStats.NoEnteredSymbols++;
             }
@@ -132,9 +126,11 @@ namespace VirtualTerminal
         #endregion Event(s)
 
         #region Method(s)
+
+        #region Form Load Method(s)
         private void SetPortComboBox()
         {
-            string[] serialPortNames = VirtualTerminalService.GetAvailableSerialPortNames();
+            string[] serialPortNames = SerialPort.GetPortNames();
 
             if (serialPortNames.Length == 0)
             {
@@ -171,19 +167,33 @@ namespace VirtualTerminal
         {
             buttonStartTxProcess.Enabled = buttonStartRxProcess.Enabled = enableButton;
         }
-
-        private void ActivateTerminal()
-        {
-            richTextBoxTerminal.Visible = true;
-
-            richTextBoxTerminal.Focus();
-            richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
-        }
+        #endregion Form Load Method(s)
 
         private static bool IsArrowKeyPressed(Keys keyCode)
         {
             return keyCode == Keys.Up || keyCode == Keys.Down ||
                 keyCode == Keys.Left || keyCode == Keys.Right;
+        }
+
+        private void HandlePressedKeyInTerminalWindow(KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Back)
+            {
+                MainForm.isBackspacePressed = true;
+
+                VirtualTerminalStats.NoEnteredSymbols--;
+            }
+            else
+            {
+                MainForm.isBackspacePressed = false;
+
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.Handled = true;
+
+                    HandleEnteredCommand();
+                }
+            }
         }
 
         private void HandleEnteredCommand()
@@ -193,38 +203,40 @@ namespace VirtualTerminal
 
             if (command.ToLower().Equals(VirtualTerminalCommands.Quit))
             {
-                VirtualTerminalService.CloseSerialPort();
+                MainForm.serialPort.Close();
 
                 VirtualTerminalStats.IsActive = false;
 
-                ResetAndExitTerminalWindow();
+                ExitTerminalWindow();
             }
             else if (command.ToLower().Equals(VirtualTerminalCommands.Clear))
             {
+                VirtualTerminalStats.NoEnteredSymbols = 0;
+
                 ClearTerminalWindow();
             }
             else
             {
-                if (VirtualTerminalStats.CurrentMode == VirtualTerminalMode.Text)
-                {
-                    VirtualTerminalService.SendData(new char[] { command[0] });
-                }
-                else
-                {
-                    if (byte.TryParse(command, NumberStyles.HexNumber, null, out byte hexValue))
-                    {
-                        VirtualTerminalService.SendData(new byte[] { hexValue });
-                    }
-                }
+                MainForm.TransmitData(command);
 
-                richTextBoxTerminal.Text += "\n> ";
+                richTextBoxTerminal.Text += "\n" + "> ";
+
                 richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
             }
 
             VirtualTerminalStats.NoEnteredSymbols = 0;
         }
 
-        private void ResetAndExitTerminalWindow()
+        #region Terminal Window Method(s)
+        private void ActivateTerminalWindow()
+        {
+            richTextBoxTerminal.Visible = true;
+
+            richTextBoxTerminal.Focus();
+            richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
+        }
+
+        private void ExitTerminalWindow()
         {
             richTextBoxTerminal.Text = "> ";
             richTextBoxTerminal.Visible = false;
@@ -235,8 +247,25 @@ namespace VirtualTerminal
         private void ClearTerminalWindow()
         {
             richTextBoxTerminal.Text = "> ";
+
             richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
         }
+        #endregion Terminal Window Method(s)
+
+        #region Serial Port Method(s)
+        private static void TransmitData(string data)
+        {
+            if (VirtualTerminalStats.BufferMode == VirtualTerminalBufferMode.Text)
+            {
+                MainForm.serialPort.Write(new char[] { data[0] }, 0, 1);
+            }
+            else if (byte.TryParse(data, NumberStyles.HexNumber, null, out byte hexValue))
+            {
+                MainForm.serialPort.Write(new byte[] { hexValue }, 0, 1);
+            }
+        }
+        #endregion Serial Port Method(s)
+
         #endregion Method(s)
     }
 }
