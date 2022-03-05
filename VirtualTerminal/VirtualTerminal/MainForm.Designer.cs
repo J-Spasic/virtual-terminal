@@ -97,6 +97,7 @@
             this.buttonStartRxProcess.TabIndex = 12;
             this.buttonStartRxProcess.Text = "Start Rx Process";
             this.buttonStartRxProcess.UseVisualStyleBackColor = true;
+            this.buttonStartRxProcess.Click += new System.EventHandler(this.StartRxProcessButton_Click);
             // 
             // buttonStartTxProcess
             // 

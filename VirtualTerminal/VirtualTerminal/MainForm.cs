@@ -26,15 +26,26 @@ namespace VirtualTerminal
         {
             MainForm.serialPort = new SerialPort();
 
+            MainForm.serialPort.DataReceived += new SerialDataReceivedEventHandler(SerialPort_DataReceived);
+
             MainForm.isBackspacePressed = false;
         }
         #endregion Constructor(s)
+
+        #region Delegate(s)
+        private delegate void SerialPortDataReceivedDelegate(string data);
+        #endregion Delegate(s)
 
         #region Event(s)
         private void MainForm_Load(object sender, EventArgs e)
         {
             SetPortComboBox();
             SetInitialStateOfControls();
+
+            MainForm.SerialPortDataReceived += delegate (string data)
+            {
+                Invoke((MethodInvoker)delegate () { WriteDataToTerminalWindow(data); });
+            };
         }
 
         private void PortComboBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -80,21 +91,28 @@ namespace VirtualTerminal
 
         private void StartTxProcessButton_Click(object sender, EventArgs e)
         {
-            try
+            StartProcess(VirtualTerminalProcessType.Transmit);
+        }
+
+        private void StartRxProcessButton_Click(object sender, EventArgs e)
+        {
+            StartProcess(VirtualTerminalProcessType.Receive);
+        }
+
+        private static event SerialPortDataReceivedDelegate? SerialPortDataReceived;
+
+        private static void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            SerialPort? sourceSerialPort = sender as SerialPort;
+
+            if (sourceSerialPort is not null)
             {
-                MainForm.serialPort.Open();
+                string receivedData = sourceSerialPort.ReadExisting();
 
-                VirtualTerminalStats.IsActive = true;
-
-                ActivateTerminalWindow();
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                MessageBox.Show("You do not have access to this port. Please try another one.",
-                    "Unauthorized access", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-                // To-Do: Replace with Logger.
-                Console.WriteLine(ex.Message);
+                if (MainForm.SerialPortDataReceived is not null)
+                {
+                    MainForm.SerialPortDataReceived(receivedData);
+                }
             }
         }
 
@@ -217,7 +235,10 @@ namespace VirtualTerminal
             }
             else
             {
-                MainForm.TransmitData(command);
+                if (VirtualTerminalStats.ProcessType == VirtualTerminalProcessType.Transmit)
+                {
+                    MainForm.TransmitData(command);
+                }
 
                 if (richTextBoxTerminal.TextLength >= short.MaxValue) { richTextBoxTerminal.Text = "> "; }
                 else { richTextBoxTerminal.Text += "\n" + "> "; }
@@ -237,6 +258,28 @@ namespace VirtualTerminal
             richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
         }
 
+        private void WriteDataToTerminalWindow(string data)
+        {
+            if (VirtualTerminalStats.ProcessType == VirtualTerminalProcessType.Receive)
+            {
+                if (VirtualTerminalStats.BufferMode == VirtualTerminalBufferMode.Text)
+                {
+                    richTextBoxTerminal.Text += data + "\n" + "> ";
+                }
+                else
+                {
+                    if (byte.TryParse(data, NumberStyles.HexNumber, null, out byte hexValue))
+                    {
+                        richTextBoxTerminal.Text += hexValue + "\n" + "> ";
+                    }
+                }
+
+                VirtualTerminalStats.NoEnteredSymbols = 0;
+
+                richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
+            }
+        }
+
         private void ExitTerminalWindow()
         {
             richTextBoxTerminal.Text = "> ";
@@ -254,6 +297,27 @@ namespace VirtualTerminal
         #endregion Terminal Window Method(s)
 
         #region Serial Port Method(s)
+        private void StartProcess(VirtualTerminalProcessType processType)
+        {
+            try
+            {
+                MainForm.serialPort.Open();
+
+                VirtualTerminalStats.IsActive = true;
+                VirtualTerminalStats.ProcessType = processType;
+
+                ActivateTerminalWindow();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                MessageBox.Show("You do not have access to this port. Please try another one.",
+                    "Unauthorized access", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                // To-Do: Replace with Logger.
+                Console.WriteLine(ex.Message);
+            }
+        }
+
         private static void TransmitData(string data)
         {
             if (VirtualTerminalStats.BufferMode == VirtualTerminalBufferMode.Text)
