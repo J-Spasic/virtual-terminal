@@ -318,6 +318,8 @@ namespace VirtualTerminal
         {
             try
             {
+                TryToChangeBaudRate();
+
                 MainForm.serialPort.Open();
 
                 VirtualTerminalStats.IsActive = true;
@@ -332,6 +334,14 @@ namespace VirtualTerminal
 
                 // To-Do: Replace with Logger.
                 Console.WriteLine(ex.Message);
+            }
+        }
+
+        private void TryToChangeBaudRate()
+        {
+            if (int.TryParse(comboBoxBaudRate.Text, out int baudRate))
+            {
+                MainForm.serialPort.BaudRate = baudRate;
             }
         }
 
