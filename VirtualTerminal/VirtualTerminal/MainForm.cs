@@ -14,6 +14,8 @@ namespace VirtualTerminal
         private static readonly SerialPort serialPort;
 
         private static bool isBackspacePressed;
+
+        private static event SerialPortDataReceivedDelegate? SerialPortDataReceived;
         #endregion Field(s)
 
         #region Constructor(s)
@@ -25,7 +27,6 @@ namespace VirtualTerminal
         static MainForm()
         {
             MainForm.serialPort = new SerialPort();
-
             MainForm.serialPort.DataReceived += new SerialDataReceivedEventHandler(SerialPort_DataReceived);
 
             MainForm.isBackspacePressed = false;
@@ -44,7 +45,7 @@ namespace VirtualTerminal
 
             MainForm.SerialPortDataReceived += delegate (string data)
             {
-                Invoke((MethodInvoker)delegate () { WriteDataToTerminalWindow(data); });
+                Invoke((MethodInvoker)delegate () { WriteReceivedDataToTerminalWindow(data); });
             };
         }
 
@@ -99,20 +100,13 @@ namespace VirtualTerminal
             StartProcess(VirtualTerminalProcessType.Receive);
         }
 
-        private static event SerialPortDataReceivedDelegate? SerialPortDataReceived;
-
         private static void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            SerialPort? sourceSerialPort = sender as SerialPort;
-
-            if (sourceSerialPort is not null)
+            if (sender is SerialPort sourceSerialPort)
             {
                 string receivedData = sourceSerialPort.ReadExisting();
 
-                if (MainForm.SerialPortDataReceived is not null)
-                {
-                    MainForm.SerialPortDataReceived(receivedData);
-                }
+                MainForm.SerialPortDataReceived?.Invoke(receivedData);
             }
         }
 
@@ -123,10 +117,16 @@ namespace VirtualTerminal
 
         private void TerminalRichTextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if (MainForm.IsArrowKeyPressed(e.KeyCode)) { e.Handled = true; }
+            if (MainForm.IsArrowKeyPressed(e.KeyCode))
+            {
+                e.Handled = true;
+            }
             else if (VirtualTerminalStats.NoEnteredSymbols == 0)
             {
-                if (e.KeyCode == Keys.Back) { e.Handled = true; }
+                if (e.KeyCode == Keys.Back)
+                {
+                    e.Handled = true;
+                }
             }
             else
             {
@@ -150,16 +150,19 @@ namespace VirtualTerminal
         {
             string[] serialPortNames = SerialPort.GetPortNames();
 
-            if (serialPortNames.Length == 0)
+            if (serialPortNames != null)
             {
-                MessageBox.Show("You do not have available serial ports.", "No serial ports available",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                foreach (string portName in serialPortNames)
+                {
+                    comboBoxPort.Items.Add(portName);
+                }
+
+                comboBoxPort.SelectedIndex = 0;
             }
             else
             {
-                foreach (string portName in serialPortNames) { comboBoxPort.Items.Add(portName); }
-
-                comboBoxPort.SelectedIndex = 0;
+                MessageBox.Show("You do not have available serial ports.", "No serial ports available",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -167,8 +170,14 @@ namespace VirtualTerminal
         {
             SetComboBoxesDefaultValues();
 
-            if (comboBoxPort.Items.Count > 0) { SetButtonsEnabledProperty(true); }
-            else { SetButtonsEnabledProperty(false); }
+            if (comboBoxPort.Items.Count > 0)
+            {
+                SetButtonsEnabledProperty(true);
+            }
+            else
+            {
+                SetButtonsEnabledProperty(false);
+            }
 
             richTextBoxTerminal.Visible = false;
         }
@@ -240,10 +249,7 @@ namespace VirtualTerminal
                     MainForm.TransmitData(command);
                 }
 
-                if (richTextBoxTerminal.TextLength >= short.MaxValue) { richTextBoxTerminal.Text = "> "; }
-                else { richTextBoxTerminal.Text += "\n" + "> "; }
-
-                richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
+                TryToClearTerminalWindow();
             }
 
             VirtualTerminalStats.NoEnteredSymbols = 0;
@@ -258,7 +264,7 @@ namespace VirtualTerminal
             richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
         }
 
-        private void WriteDataToTerminalWindow(string data)
+        private void WriteReceivedDataToTerminalWindow(string data)
         {
             if (VirtualTerminalStats.ProcessType == VirtualTerminalProcessType.Receive)
             {
@@ -266,12 +272,9 @@ namespace VirtualTerminal
                 {
                     richTextBoxTerminal.Text += data + "\n" + "> ";
                 }
-                else
+                else if (byte.TryParse(data, NumberStyles.HexNumber, null, out byte hexValue))
                 {
-                    if (byte.TryParse(data, NumberStyles.HexNumber, null, out byte hexValue))
-                    {
-                        richTextBoxTerminal.Text += hexValue + "\n" + "> ";
-                    }
+                    richTextBoxTerminal.Text += hexValue + "\n" + "> ";
                 }
 
                 VirtualTerminalStats.NoEnteredSymbols = 0;
@@ -294,9 +297,23 @@ namespace VirtualTerminal
 
             richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
         }
+
+        private void TryToClearTerminalWindow()
+        {
+            if (richTextBoxTerminal.TextLength >= short.MaxValue)
+            {
+                richTextBoxTerminal.Text = "> ";
+            }
+            else
+            {
+                richTextBoxTerminal.Text += "\n" + "> ";
+            }
+
+            richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
+        }
         #endregion Terminal Window Method(s)
 
-        #region Serial Port Method(s)
+        #region Serial Communication Method(s)
         private void StartProcess(VirtualTerminalProcessType processType)
         {
             try
@@ -329,7 +346,7 @@ namespace VirtualTerminal
                 MainForm.serialPort.Write(new byte[] { hexValue }, 0, 1);
             }
         }
-        #endregion Serial Port Method(s)
+        #endregion Serial Communication Method(s)
 
         #endregion Method(s)
     }
