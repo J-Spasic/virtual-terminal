@@ -123,7 +123,7 @@ namespace VirtualTerminal
             }
             else if (VirtualTerminalStats.NoEnteredSymbols == 0)
             {
-                if (e.KeyCode == Keys.Back)
+                if (e.KeyCode.Equals(Keys.Back))
                 {
                     e.Handled = true;
                 }
@@ -198,13 +198,13 @@ namespace VirtualTerminal
 
         private static bool IsArrowKeyPressed(Keys keyCode)
         {
-            return keyCode == Keys.Up || keyCode == Keys.Down ||
-                keyCode == Keys.Left || keyCode == Keys.Right;
+            return keyCode.Equals(Keys.Up) || keyCode.Equals(Keys.Down) ||
+                keyCode.Equals(Keys.Left) || keyCode.Equals(Keys.Right);
         }
 
         private void HandlePressedKeyInTerminalWindow(KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Back)
+            if (e.KeyCode.Equals(Keys.Back))
             {
                 MainForm.isBackspacePressed = true;
 
@@ -214,7 +214,7 @@ namespace VirtualTerminal
             {
                 MainForm.isBackspacePressed = false;
 
-                if (e.KeyCode == Keys.Enter)
+                if (e.KeyCode.Equals(Keys.Enter))
                 {
                     e.Handled = true;
 
@@ -244,7 +244,7 @@ namespace VirtualTerminal
             }
             else
             {
-                if (VirtualTerminalStats.ProcessType == VirtualTerminalProcessType.Transmit)
+                if (VirtualTerminalStats.ProcessType.Equals(VirtualTerminalProcessType.Transmit))
                 {
                     MainForm.TransmitData(command);
                 }
@@ -266,9 +266,9 @@ namespace VirtualTerminal
 
         private void WriteReceivedDataToTerminalWindow(string data)
         {
-            if (VirtualTerminalStats.ProcessType == VirtualTerminalProcessType.Receive)
+            if (VirtualTerminalStats.ProcessType.Equals(VirtualTerminalProcessType.Receive))
             {
-                if (VirtualTerminalStats.BufferMode == VirtualTerminalBufferMode.Text)
+                if (VirtualTerminalStats.BufferMode.Equals(VirtualTerminalBufferMode.Text))
                 {
                     richTextBoxTerminal.Text += data + "\n" + "> ";
                 }
@@ -347,7 +347,7 @@ namespace VirtualTerminal
 
         private static void TransmitData(string data)
         {
-            if (VirtualTerminalStats.BufferMode == VirtualTerminalBufferMode.Text)
+            if (VirtualTerminalStats.BufferMode.Equals(VirtualTerminalBufferMode.Text))
             {
                 MainForm.serialPort.Write(new char[] { data[0] }, 0, 1);
             }
