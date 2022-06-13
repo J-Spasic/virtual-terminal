@@ -45,7 +45,7 @@ namespace VirtualTerminal
 
             MainForm.SerialPortDataReceived += delegate (string data)
             {
-                Invoke((MethodInvoker)delegate () { WriteReceivedDataToTerminalWindow(data); });
+                _ = Invoke((MethodInvoker)delegate () { WriteReceivedDataToTerminalWindow(data); });
             };
         }
 
@@ -86,7 +86,7 @@ namespace VirtualTerminal
 
         private void TextModeRadioButton_CheckedChanged(object sender, EventArgs e)
         {
-            VirtualTerminalStats.BufferMode = (radioButtonTextMode.Checked) ?
+            VirtualTerminalStats.BufferMode = radioButtonTextMode.Checked ?
                 VirtualTerminalBufferMode.Text : VirtualTerminalBufferMode.Hex;
         }
 
@@ -150,18 +150,18 @@ namespace VirtualTerminal
         {
             string[] serialPortNames = SerialPort.GetPortNames();
 
-            if (serialPortNames != null)
+            if (serialPortNames.Length > 0)
             {
                 foreach (string portName in serialPortNames)
                 {
-                    comboBoxPort.Items.Add(portName);
+                    _ = comboBoxPort.Items.Add(portName);
                 }
 
                 comboBoxPort.SelectedIndex = 0;
             }
             else
             {
-                MessageBox.Show("You do not have available serial ports.", "No serial ports available",
+                _ = MessageBox.Show("You do not have available serial ports.", "No serial ports available",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -260,7 +260,7 @@ namespace VirtualTerminal
         {
             richTextBoxTerminal.Visible = true;
 
-            richTextBoxTerminal.Focus();
+            _ = richTextBoxTerminal.Focus();
             richTextBoxTerminal.Select(richTextBoxTerminal.TextLength, 0);
         }
 
@@ -288,7 +288,7 @@ namespace VirtualTerminal
             richTextBoxTerminal.Text = "> ";
             richTextBoxTerminal.Visible = false;
 
-            comboBoxPort.Focus();
+            _ = comboBoxPort.Focus();
         }
 
         private void ClearTerminalWindow()
@@ -329,7 +329,7 @@ namespace VirtualTerminal
             }
             catch (UnauthorizedAccessException ex)
             {
-                MessageBox.Show("You do not have access to this port. Please try another one.",
+                _ = MessageBox.Show("You do not have access to this port. Please try another one.",
                     "Unauthorized access", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
                 // To-Do: Replace with Logger.
